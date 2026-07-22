@@ -1,0 +1,39 @@
+---
+interface Props {
+  purchasedDate?: Date;
+  purchasePlace?: string;
+  price?: number;
+}
+
+const { purchasedDate, purchasePlace, price } = Astro.props;
+
+const tiles = [
+  purchasedDate && {
+    value: purchasedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' }),
+    label: 'purchased',
+    mono: true,
+  },
+  purchasePlace && { value: purchasePlace, label: 'where', mono: false },
+  price != null && { value: `$${price}`, label: 'price paid', mono: true },
+].filter(Boolean) as { value: string; label: string; mono: boolean }[];
+---
+
+{tiles.length > 0 && (
+  <div class="not-prose quick-facts">
+    {tiles.map((tile) => (
+      <div class="tile">
+        <div class:list={['v', { mono: tile.mono }]}>{tile.value}</div>
+        <div class="l">{tile.label}</div>
+      </div>
+    ))}
+  </div>
+)}
+
+<style>
+  .quick-facts { display: grid; grid-template-columns: 1fr; gap: 0.625rem; margin-top: 1.125rem; }
+  @media (min-width: 480px) { .quick-facts { grid-template-columns: repeat(3, 1fr); } }
+  .tile { border: 1px solid var(--border); background: var(--card); border-radius: 0.625rem; padding: 0.75rem 0.875rem; }
+  .v { font-size: 1.1875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .v.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .l { margin-top: 3px; font-size: 0.65rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+</style>

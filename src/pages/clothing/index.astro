@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import EntryCard from '@/components/EntryCard.astro';
+
+const entries = (await getCollection('clothing', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<Layout title="Clothing — sj-blog" description="Notes and reviews on things I wear.">
+  <h1 class="text-2xl font-bold tracking-tight">Clothing</h1>
+  <div class="mt-6 grid gap-4">
+    {entries.map((entry) => {
+      const meta = [entry.data.brand, entry.data.price != null ? `$${entry.data.price}` : null]
+        .filter(Boolean)
+        .join(' · ');
+      return (
+        <EntryCard
+          href={`/clothing/${entry.id}`}
+          title={entry.data.title}
+          description={entry.data.description}
+          pubDate={entry.data.pubDate}
+          tags={entry.data.tags}
+          meta={meta || undefined}
+        />
+      );
+    })}
+  </div>
+</Layout>

@@ -1,0 +1,42 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import EntryCard from '@/components/EntryCard.astro';
+
+const [posts, fitness, clothing] = await Promise.all([
+  getCollection('posts', ({ data }) => import.meta.env.DEV || !data.draft),
+  getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft),
+  getCollection('clothing', ({ data }) => import.meta.env.DEV || !data.draft),
+]);
+
+const latest = [
+  ...posts.map((e) => ({ kind: 'posts' as const, entry: e })),
+  ...fitness.map((e) => ({ kind: 'fitness' as const, entry: e })),
+  ...clothing.map((e) => ({ kind: 'clothing' as const, entry: e })),
+]
+  .sort((a, b) => b.entry.data.pubDate.valueOf() - a.entry.data.pubDate.valueOf())
+  .slice(0, 6);
+---
+
+<Layout title="sj-blog">
+  <section>
+    <h1 class="text-3xl font-bold tracking-tight">sj-blog</h1>
+    <p class="mt-2 text-muted-foreground">Posts, fitness log, and clothing notes.</p>
+  </section>
+
+  <section class="mt-10">
+    <h2 class="text-lg font-semibold">Latest</h2>
+    <div class="mt-4 grid gap-4">
+      {latest.map(({ kind, entry }) => (
+        <EntryCard
+          href={`/${kind}/${entry.id}`}
+          title={entry.data.title}
+          description={entry.data.description}
+          pubDate={entry.data.pubDate}
+          tags={entry.data.tags}
+          meta={kind}
+        />
+      ))}
+    </div>
+  </section>
+</Layout>

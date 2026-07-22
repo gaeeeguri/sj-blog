@@ -1,0 +1,174 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/source-serif-4/wght.css";
+@import "@fontsource/pretendard/400.css";
+@import "@fontsource/pretendard/500.css";
+@import "@fontsource/pretendard/600.css";
+
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+    font-family: 'Jetendard';
+    src: url('/fonts/jetendard/Jetendard-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Jetendard';
+    src: url('/fonts/jetendard/Jetendard-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@theme inline {
+    --font-heading: 'Source Serif 4 Variable', ui-serif, Georgia, serif;
+    --font-sans: 'Pretendard', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Jetendard', ui-monospace, 'SF Mono', Menlo, monospace;
+    --color-material-denim: var(--material-denim);
+    --color-material-denim-soft: var(--material-denim-soft);
+    --color-material-chino: var(--material-chino);
+    --color-material-chino-soft: var(--material-chino-soft);
+    --color-material-leather: var(--material-leather);
+    --color-material-leather-soft: var(--material-leather-soft);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --background: #f2efe9;
+    --foreground: #262019;
+    --card: #fbfaf6;
+    --card-foreground: #262019;
+    --popover: #fbfaf6;
+    --popover-foreground: #262019;
+    --primary: #262019;
+    --primary-foreground: #f2efe9;
+    --secondary: #ece7dc;
+    --secondary-foreground: #262019;
+    --muted: #ece7dc;
+    --muted-foreground: #756c5e;
+    --accent: #ece7dc;
+    --accent-foreground: #262019;
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: #dfd8ca;
+    --input: #dfd8ca;
+    --ring: #a49b89;
+    --chart-1: #8fae92;
+    --chart-2: #756c5e;
+    --chart-3: #a4915f;
+    --chart-4: #35507a;
+    --chart-5: #262019;
+    --radius: 0.625rem;
+    --sidebar: #ece7dc;
+    --sidebar-foreground: #262019;
+    --sidebar-primary: #262019;
+    --sidebar-primary-foreground: #f2efe9;
+    --sidebar-accent: #dfd8ca;
+    --sidebar-accent-foreground: #262019;
+    --sidebar-border: #dfd8ca;
+    --sidebar-ring: #a49b89;
+
+    /* material colors — clothing categories */
+    --material-denim: #35507a;
+    --material-denim-soft: #e4e9f1;
+    --material-chino: #a4915f;
+    --material-chino-soft: #ede7d8;
+    --material-leather: #3a2a20;
+    --material-leather-soft: #e9e1d8;
+}
+
+.dark {
+    --background: #1b1812;
+    --foreground: #e9e3d6;
+    --card: #221e17;
+    --card-foreground: #e9e3d6;
+    --popover: #221e17;
+    --popover-foreground: #e9e3d6;
+    --primary: #e9e3d6;
+    --primary-foreground: #1b1812;
+    --secondary: #2c271e;
+    --secondary-foreground: #e9e3d6;
+    --muted: #2c271e;
+    --muted-foreground: #a49b89;
+    --accent: #2c271e;
+    --accent-foreground: #e9e3d6;
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: #332e24;
+    --input: #332e24;
+    --ring: #756c5e;
+    --chart-1: #8fae92;
+    --chart-2: #a49b89;
+    --chart-3: #c2ac74;
+    --chart-4: #7f9dc9;
+    --chart-5: #e9e3d6;
+    --sidebar: #221e17;
+    --sidebar-foreground: #e9e3d6;
+    --sidebar-primary: #e9e3d6;
+    --sidebar-primary-foreground: #1b1812;
+    --sidebar-accent: #2c271e;
+    --sidebar-accent-foreground: #e9e3d6;
+    --sidebar-border: #332e24;
+    --sidebar-ring: #756c5e;
+
+    /* material colors — clothing categories (soft backgrounds darken, solid hues hold) */
+    --material-denim-soft: #232c3c;
+    --material-chino-soft: #35301f;
+    --material-leather-soft: #2b241d;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    }
+}

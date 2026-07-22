@@ -1,0 +1,62 @@
+---
+import type { GetStaticPathsOptions } from 'astro';
+import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import EntryCard from '@/components/EntryCard.astro';
+import TrainingHeatmap from '@/components/fitness/TrainingHeatmap.astro';
+import { buttonVariants } from '@/components/ui/button';
+
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+  const entries = (await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+  );
+  return paginate(entries, { pageSize: 24 });
+}
+
+const { page } = Astro.props;
+
+const allEntries = (await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<Layout title="Fitness — sj-blog" description="Training log and workout notes.">
+  <h1 class="text-2xl font-bold tracking-tight">Fitness</h1>
+  <div class="mt-6">
+    <TrainingHeatmap entries={allEntries} />
+  </div>
+  <div class="mt-8 grid gap-4">
+    {page.data.map((entry) => {
+      const meta = [entry.data.workoutType, entry.data.durationMinutes ? `${entry.data.durationMinutes} min` : null]
+        .filter(Boolean)
+        .join(' · ');
+      return (
+        <EntryCard
+          href={`/fitness/${entry.id}`}
+          title={entry.data.title}
+          description={entry.data.description}
+          pubDate={entry.data.pubDate}
+          tags={entry.data.tags}
+          meta={meta || undefined}
+        />
+      );
+    })}
+  </div>
+  <nav class="mt-8 flex items-center justify-between text-sm">
+    <a
+      href={page.url.prev ?? '#'}
+      aria-disabled={!page.url.prev}
+      class={buttonVariants({ variant: 'outline' }) + (page.url.prev ? '' : ' pointer-events-none opacity-50')}
+    >
+      ← Newer
+    </a>
+    <span class="text-muted-foreground">Page {page.currentPage} of {page.lastPage}</span>
+    <a
+      href={page.url.next ?? '#'}
+      aria-disabled={!page.url.next}
+      class={buttonVariants({ variant: 'outline' }) + (page.url.next ? '' : ' pointer-events-none opacity-50')}
+    >
+      Older →
+    </a>
+  </nav>
+</Layout>

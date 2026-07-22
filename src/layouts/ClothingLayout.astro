@@ -1,0 +1,105 @@
+---
+import Layout from './Layout.astro';
+import ConstructionFigure from '@/components/clothing/ConstructionFigure.astro';
+import QuickFacts from '@/components/clothing/QuickFacts.astro';
+import DetailTabs from '@/components/clothing/DetailTabs.astro';
+import { getMaterialVars } from '@/lib/materialColor';
+
+interface Hotspot {
+  view: 'front' | 'back';
+  x: number;
+  y: number;
+  label: string;
+  description: string;
+  image?: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  category?: string;
+  brand?: string;
+  madeIn?: string;
+  measurements?: string;
+  purchasedDate?: Date;
+  purchasePlace?: string;
+  price?: number;
+  frontImage?: string;
+  backImage?: string;
+  hotspots?: Hotspot[];
+  story?: string;
+  storyQuote?: string;
+  care?: string[];
+}
+
+const {
+  title,
+  description,
+  category,
+  brand,
+  madeIn,
+  measurements,
+  purchasedDate,
+  purchasePlace,
+  price,
+  frontImage,
+  backImage,
+  hotspots = [],
+  story,
+  storyQuote,
+  care = [],
+} = Astro.props;
+
+const { color: materialColor, soft: materialSoft } = getMaterialVars(category);
+const byline = [brand, madeIn ? `made in ${madeIn}` : null].filter(Boolean).join(' · ');
+---
+
+<Layout title={`${title} — sj-blog`} description={description}>
+  <a href="/clothing" class="crumb">← Clothing</a>
+
+  <ConstructionFigure
+    hotspots={hotspots}
+    frontImage={frontImage}
+    backImage={backImage}
+    materialColor={materialColor}
+    materialSoft={materialSoft}
+  />
+
+  {measurements && <p class="measure-line">{measurements}</p>}
+
+  <div class="title-block">
+    {category && (
+      <span class="category-badge" style={`--mat: ${materialColor}; --mat-soft: ${materialSoft}`}>
+        <span class="dot"></span>{category}
+      </span>
+    )}
+    <h1 class="item-title">{title}</h1>
+    {byline && <p class="byline">{byline}</p>}
+  </div>
+
+  <QuickFacts purchasedDate={purchasedDate} purchasePlace={purchasePlace} price={price} />
+
+  <DetailTabs materialColor={materialColor} story={story} storyQuote={storyQuote} care={care}>
+    <slot />
+  </DetailTabs>
+</Layout>
+
+<style>
+  .crumb { font-size: 0.8rem; color: var(--muted-foreground); text-decoration: none; }
+  .crumb:hover { color: var(--foreground); }
+
+  .measure-line {
+    margin-top: 0.625rem; font-size: 0.75rem; color: var(--muted-foreground);
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  }
+
+  .title-block { margin-top: 1.625rem; }
+  .category-badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px 4px 8px; border-radius: 999px;
+    background: var(--mat-soft); color: var(--mat);
+  }
+  .category-badge .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--mat); }
+  h1.item-title { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.01em; margin: 10px 0 4px; }
+  .byline { font-size: 0.84rem; color: var(--muted-foreground); }
+</style>

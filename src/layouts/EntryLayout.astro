@@ -1,0 +1,64 @@
+---
+import Layout from './Layout.astro';
+import { Badge } from '@/components/ui/badge';
+import StatTileRow from '@/components/fitness/StatTileRow.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  durationMinutes?: number;
+  distanceKm?: number;
+  paceMinPerKm?: number;
+  avgHeartRate?: number;
+  elevationM?: number;
+}
+
+const {
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  tags = [],
+  durationMinutes,
+  distanceKm,
+  paceMinPerKm,
+  avgHeartRate,
+  elevationM,
+} = Astro.props;
+---
+
+<Layout title={`${title} — sj-blog`} description={description}>
+  <article class="prose prose-neutral max-w-none dark:prose-invert">
+    <header class="mb-8 not-prose">
+      <h1 class="text-3xl font-bold tracking-tight">{title}</h1>
+      <p class="mt-2 text-sm text-muted-foreground">
+        <time datetime={pubDate.toISOString()}>
+          {pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </time>
+        {updatedDate && (
+          <span> · updated {updatedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        )}
+      </p>
+      {tags.length > 0 && (
+        <div class="mt-3 flex flex-wrap gap-2">
+          {tags.map((tag) => <Badge variant="secondary">{tag}</Badge>)}
+        </div>
+      )}
+      {durationMinutes !== undefined && (
+        <div class="mt-5">
+          <StatTileRow
+            durationMinutes={durationMinutes}
+            distanceKm={distanceKm}
+            paceMinPerKm={paceMinPerKm}
+            avgHeartRate={avgHeartRate}
+            elevationM={elevationM}
+          />
+        </div>
+      )}
+    </header>
+    <slot />
+  </article>
+</Layout>

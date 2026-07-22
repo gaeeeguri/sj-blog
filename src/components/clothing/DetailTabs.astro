@@ -1,0 +1,93 @@
+---
+interface Props {
+  materialColor: string;
+  story?: string;
+  storyQuote?: string;
+  care: string[];
+}
+
+const { materialColor, story, storyQuote, care } = Astro.props;
+
+const storyParagraphs = story
+  ? story
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+  : [];
+
+const hasStory = storyParagraphs.length > 0 || !!storyQuote;
+const hasCare = care.length > 0;
+---
+
+<div class="not-prose tabs" style={`--mat: ${materialColor}`}>
+  <input type="radio" name="tabs" id="tab-overview" class="tab-input" checked />
+  {hasStory && <input type="radio" name="tabs" id="tab-story" class="tab-input" />}
+  {hasCare && <input type="radio" name="tabs" id="tab-care" class="tab-input" />}
+
+  <div class="tab-list">
+    <label for="tab-overview">Overview</label>
+    {hasStory && <label for="tab-story">The Story</label>}
+    {hasCare && <label for="tab-care">Care</label>}
+  </div>
+
+  <div class="tab-panels">
+    <div class="panel panel-overview prose prose-neutral max-w-none dark:prose-invert">
+      <slot />
+    </div>
+
+    {hasStory && (
+      <div class="panel panel-story">
+        {storyParagraphs.length > 0 && <p>{storyParagraphs[0]}</p>}
+        {storyQuote && (
+          <div class="pull-quote">
+            <p>&ldquo;{storyQuote}&rdquo;</p>
+          </div>
+        )}
+        {storyParagraphs.slice(1).map((p) => (
+          <p>{p}</p>
+        ))}
+      </div>
+    )}
+
+    {hasCare && (
+      <div class="panel panel-care">
+        <ul class="care-list">
+          {care.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  .tabs { margin-top: 1.875rem; }
+  .tab-input { position: absolute; opacity: 0; pointer-events: none; }
+  .tab-list { display: flex; gap: 4px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .tab-list label {
+    cursor: pointer; padding: 10px 4px; margin-right: 18px; white-space: nowrap;
+    font-size: 0.84rem; color: var(--muted-foreground); border-bottom: 2px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .tab-list label:hover { color: var(--foreground); }
+  #tab-overview:checked ~ .tab-list label[for="tab-overview"],
+  #tab-story:checked ~ .tab-list label[for="tab-story"],
+  #tab-care:checked ~ .tab-list label[for="tab-care"] {
+    color: var(--foreground); font-weight: 600; border-bottom-color: var(--mat);
+  }
+
+  .panel { display: none; padding-top: 1.375rem; }
+  #tab-overview:checked ~ .tab-panels .panel-overview,
+  #tab-story:checked ~ .tab-panels .panel-story,
+  #tab-care:checked ~ .tab-panels .panel-care { display: block; }
+
+  .panel-story p { max-width: 62ch; }
+  .panel-story p + p { margin-top: 12px; }
+
+  .pull-quote { margin: 20px 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--mat); }
+  .pull-quote p { font-family: var(--font-heading); font-size: 1.125rem; line-height: 1.4; margin: 0; }
+
+  .care-list { margin: 0; padding-left: 18px; font-size: 0.875rem; }
+  .care-list li + li { margin-top: 6px; }
+</style>

@@ -15,3 +15,23 @@ node_modules
 
 #!.yarn/cache
 .pnp.*
+
+# astro
+dist/
+.astro/
+
+# env
+.env
+.env.production
+
+# macOS
+.DS_Store
+.vercel
+
+# personal health data export - never commit raw exports
+Samsung Health/
+
+# claude code / oh-my-claudecode local state
+.claude/settings.local.json
+.omc/
+!.omc/skills/

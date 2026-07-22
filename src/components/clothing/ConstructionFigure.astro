@@ -1,0 +1,222 @@
+---
+interface Hotspot {
+  view: 'front' | 'back';
+  x: number;
+  y: number;
+  label: string;
+  description: string;
+  image?: string;
+}
+
+interface Props {
+  hotspots: Hotspot[];
+  frontImage?: string;
+  backImage?: string;
+  materialColor: string;
+  materialSoft: string;
+}
+
+const { hotspots, frontImage, backImage, materialColor, materialSoft } = Astro.props;
+
+const frontHotspots = hotspots.filter((h) => h.view === 'front');
+const backHotspots = hotspots.filter((h) => h.view === 'back');
+const showFront = frontHotspots.length > 0 || !!frontImage;
+const showBack = backHotspots.length > 0 || !!backImage;
+const showSwitch = showFront && showBack;
+const defaultView = showFront ? 'front' : 'back';
+
+function anchorFor(x: number, y: number) {
+  const left = x > 55 ? Math.max(4, x - 42) : Math.min(72, x + 6);
+  const top = y > 55 ? Math.max(4, y - 38) : Math.min(70, y + 8);
+  return { left, top };
+}
+---
+
+{hotspots.length > 0 && (
+  <div
+    class="not-prose figure-block"
+    style={`--mat: ${materialColor}; --mat-soft: ${materialSoft}`}
+  >
+    <p class="figure-hint">● tap a pin for detail</p>
+
+    {showSwitch && (
+      <>
+        <input type="radio" name="view" id="view-front" class="view-input" checked={defaultView === 'front'} />
+        <input type="radio" name="view" id="view-back" class="view-input" checked={defaultView === 'back'} />
+        <div class="view-switch">
+          <label for="view-front">Front</label>
+          <label for="view-back">Back</label>
+        </div>
+      </>
+    )}
+
+    <div class="stage">
+      {showFront && (
+        <div class={`view-panel front-view ${showSwitch ? '' : 'view-panel-solo'}`}>
+          <input type="radio" name="front-pin" id="front-pin-none" class="pin-input" checked />
+          {frontHotspots.map((_, i) => (
+            <input type="radio" name="front-pin" id={`front-pin-${i}`} class="pin-input" />
+          ))}
+
+          <div class="garment-art" style={frontImage ? `background-image: url(${frontImage}); background-size: cover; background-position: center;` : ''}></div>
+          <span class="garment-label">front</span>
+
+          {frontHotspots.map((h, i) => (
+            <label for={`front-pin-${i}`} class="pin-dot" style={`left:${h.x}%; top:${h.y}%`} tabindex="0">
+              <span class="pin-tooltip">{h.label}</span>
+            </label>
+          ))}
+
+          {frontHotspots.map((h, i) => {
+            const { left, top } = anchorFor(h.x, h.y);
+            return (
+              <div class="popover" style={`left:${left}%; top:${top}%`} id={`pop-front-${i}`}>
+                <label for="front-pin-none" class="popover-close" aria-label="Close">×</label>
+                <div class="popover-shot" style={h.image ? `background-image: url(${h.image}); background-size: cover; background-position: center;` : ''}></div>
+                <h4>{h.label}</h4>
+                <p>{h.description}</p>
+              </div>
+            );
+          })}
+
+          <label for="front-pin-none" class="pin-backdrop" aria-hidden="true"></label>
+        </div>
+      )}
+
+      {showBack && (
+        <div class={`view-panel back-view ${showSwitch ? '' : 'view-panel-solo'}`}>
+          <input type="radio" name="back-pin" id="back-pin-none" class="pin-input" checked />
+          {backHotspots.map((_, i) => (
+            <input type="radio" name="back-pin" id={`back-pin-${i}`} class="pin-input" />
+          ))}
+
+          <div class="garment-art" style={backImage ? `background-image: url(${backImage}); background-size: cover; background-position: center;` : ''}></div>
+          <span class="garment-label">back</span>
+
+          {backHotspots.map((h, i) => (
+            <label for={`back-pin-${i}`} class="pin-dot" style={`left:${h.x}%; top:${h.y}%`} tabindex="0">
+              <span class="pin-tooltip">{h.label}</span>
+            </label>
+          ))}
+
+          {backHotspots.map((h, i) => {
+            const { left, top } = anchorFor(h.x, h.y);
+            return (
+              <div class="popover" style={`left:${left}%; top:${top}%`} id={`pop-back-${i}`}>
+                <label for="back-pin-none" class="popover-close" aria-label="Close">×</label>
+                <div class="popover-shot" style={h.image ? `background-image: url(${h.image}); background-size: cover; background-position: center;` : ''}></div>
+                <h4>{h.label}</h4>
+                <p>{h.description}</p>
+              </div>
+            );
+          })}
+
+          <label for="back-pin-none" class="pin-backdrop" aria-hidden="true"></label>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+<style>
+  .figure-block { margin-top: 0.5rem; }
+  .figure-hint { font-size: 0.75rem; color: var(--muted-foreground); margin: 0 0 0.625rem; }
+
+  .view-input { position: absolute; opacity: 0; pointer-events: none; }
+  .view-switch { display: inline-flex; gap: 2px; padding: 3px; background: var(--secondary); border-radius: 999px; }
+  .view-switch label { padding: 5px 14px; font-size: 0.78rem; border-radius: 999px; cursor: pointer; color: var(--muted-foreground); }
+  #view-front:checked ~ .view-switch label[for="view-front"],
+  #view-back:checked ~ .view-switch label[for="view-back"] { background: var(--card); color: var(--foreground); font-weight: 600; }
+
+  .stage {
+    position: relative; margin-top: 0.75rem; border: 1px solid var(--border); border-radius: 0.875rem;
+    background: var(--card); aspect-ratio: 3 / 4; overflow: hidden;
+  }
+  .view-panel { position: absolute; inset: 0; display: none; }
+  .view-panel-solo { display: block; }
+  #view-front:checked ~ .stage .front-view,
+  #view-back:checked ~ .stage .back-view { display: block; }
+
+  .garment-art {
+    position: absolute; inset: 8% 18%;
+    background-image: repeating-linear-gradient(45deg,
+      color-mix(in oklab, var(--mat) 20%, var(--card)) 0 3px,
+      color-mix(in oklab, var(--mat) 8%, var(--card)) 3px 7px);
+    clip-path: polygon(35% 0%, 65% 0%, 78% 15%, 70% 52%, 70% 100%, 56% 100%, 56% 58%, 44% 58%, 44% 100%, 30% 100%, 30% 52%, 22% 15%);
+    border-radius: 4px;
+  }
+  .garment-label {
+    position: absolute; bottom: 3%; left: 50%; transform: translateX(-50%);
+    font-size: 0.7rem; color: var(--muted-foreground); background: color-mix(in oklab, var(--card) 85%, transparent);
+    padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border);
+  }
+
+  .pin-input { position: absolute; opacity: 0; pointer-events: none; }
+  .pin-dot {
+    position: absolute; width: 20px; height: 20px; margin-left: -10px; margin-top: -10px;
+    border-radius: 999px; cursor: pointer; z-index: 2;
+    background: color-mix(in oklab, var(--mat) 22%, var(--card));
+    border: 2px solid var(--mat);
+    display: flex; align-items: center; justify-content: center;
+    animation: pin-pulse 2.6s ease-in-out infinite;
+  }
+  .pin-dot::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--mat); }
+  @media (prefers-reduced-motion: reduce) { .pin-dot { animation: none; } }
+  @keyframes pin-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--mat) 35%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--mat) 0%, transparent); }
+  }
+
+  .pin-tooltip {
+    position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+    background: var(--foreground); color: var(--background);
+    font-size: 0.68rem; padding: 4px 8px; border-radius: 5px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity 120ms ease;
+  }
+  .pin-dot:hover .pin-tooltip, .pin-dot:focus-visible .pin-tooltip { opacity: 1; }
+
+  .popover {
+    position: absolute; width: 208px; max-width: 62%;
+    background: var(--card); border: 1px solid var(--border); border-radius: 0.625rem;
+    padding: 0.625rem; opacity: 0; visibility: hidden; transform: translateY(4px);
+    transition: opacity 160ms ease, transform 160ms ease; z-index: 3;
+    box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--foreground) 25%, transparent);
+  }
+  .popover-shot {
+    aspect-ratio: 4 / 3; border-radius: 6px; margin-bottom: 0.5rem;
+    background-image: repeating-linear-gradient(45deg,
+      color-mix(in oklab, var(--mat) 26%, var(--card)) 0 3px,
+      color-mix(in oklab, var(--mat) 10%, var(--card)) 3px 7px);
+    border: 1px solid var(--border); background-color: var(--card);
+  }
+  .popover h4 { margin: 0 0 4px; font-size: 0.8rem; font-weight: 700; }
+  .popover p { margin: 0; font-size: 0.75rem; color: var(--muted-foreground); line-height: 1.55; }
+  .popover-close {
+    position: absolute; top: 6px; right: 6px; width: 18px; height: 18px;
+    border-radius: 999px; background: var(--secondary); color: var(--muted-foreground);
+    display: flex; align-items: center; justify-content: center; font-size: 0.68rem; cursor: pointer;
+    z-index: 1;
+  }
+
+  /* click-elsewhere-to-close: inert until a pin is open, sits below dots(2)/popovers(3) */
+  .pin-backdrop { position: fixed; inset: 0; z-index: 1; pointer-events: none; cursor: default; }
+</style>
+
+<style is:global>
+  #front-pin-0:checked ~ #pop-front-0, #front-pin-1:checked ~ #pop-front-1,
+  #front-pin-2:checked ~ #pop-front-2, #front-pin-3:checked ~ #pop-front-3,
+  #front-pin-4:checked ~ #pop-front-4, #front-pin-5:checked ~ #pop-front-5,
+  #back-pin-0:checked ~ #pop-back-0, #back-pin-1:checked ~ #pop-back-1,
+  #back-pin-2:checked ~ #pop-back-2, #back-pin-3:checked ~ #pop-back-3,
+  #back-pin-4:checked ~ #pop-back-4, #back-pin-5:checked ~ #pop-back-5 {
+    opacity: 1; visibility: visible; transform: translateY(0);
+  }
+  #front-pin-0:checked ~ .pin-backdrop, #front-pin-1:checked ~ .pin-backdrop,
+  #front-pin-2:checked ~ .pin-backdrop, #front-pin-3:checked ~ .pin-backdrop,
+  #front-pin-4:checked ~ .pin-backdrop, #front-pin-5:checked ~ .pin-backdrop,
+  #back-pin-0:checked ~ .pin-backdrop, #back-pin-1:checked ~ .pin-backdrop,
+  #back-pin-2:checked ~ .pin-backdrop, #back-pin-3:checked ~ .pin-backdrop,
+  #back-pin-4:checked ~ .pin-backdrop, #back-pin-5:checked ~ .pin-backdrop {
+    pointer-events: auto;
+  }
+</style>

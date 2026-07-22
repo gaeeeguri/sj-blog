@@ -1,0 +1,125 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  entries: CollectionEntry<'fitness'>[];
+}
+
+const { entries } = Astro.props;
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKS = 53;
+
+function utcMidnight(d: Date) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+function dateKey(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+function levelFor(minutes: number) {
+  if (minutes <= 0) return 0;
+  if (minutes <= 20) return 1;
+  if (minutes <= 40) return 2;
+  if (minutes <= 60) return 3;
+  return 4;
+}
+
+type DayBucket = { minutes: number; items: { title: string; workoutType?: string }[] };
+const byDay = new Map<string, DayBucket>();
+
+for (const entry of entries) {
+  const key = dateKey(utcMidnight(entry.data.pubDate));
+  const bucket = byDay.get(key) ?? { minutes: 0, items: [] };
+  bucket.minutes += entry.data.durationMinutes ?? 0;
+  bucket.items.push({ title: entry.data.title, workoutType: entry.data.workoutType });
+  byDay.set(key, bucket);
+}
+
+const today = utcMidnight(new Date());
+const endSaturday = new Date(today);
+endSaturday.setUTCDate(endSaturday.getUTCDate() + (6 - endSaturday.getUTCDay()));
+const startSunday = new Date(endSaturday);
+startSunday.setUTCDate(startSunday.getUTCDate() - (WEEKS * 7 - 1));
+
+type Cell = { key: string; date: Date; minutes: number; level: number; items: DayBucket['items']; future: boolean };
+
+const weeks: Cell[][] = [];
+let cursor = new Date(startSunday);
+for (let w = 0; w < WEEKS; w++) {
+  const week: Cell[] = [];
+  for (let d = 0; d < 7; d++) {
+    const key = dateKey(cursor);
+    const bucket = byDay.get(key);
+    week.push({
+      key,
+      date: new Date(cursor),
+      minutes: bucket?.minutes ?? 0,
+      level: bucket ? levelFor(bucket.minutes) : 0,
+      items: bucket?.items ?? [],
+      future: cursor.getTime() > today.getTime(),
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  weeks.push(week);
+}
+
+const monthLabels = weeks.map((week, i) => {
+  const firstDay = week[0].date;
+  const prevMonth = i > 0 ? weeks[i - 1][0].date.getUTCMonth() : -1;
+  const showLabel = firstDay.getUTCDate() <= 7 && firstDay.getUTCMonth() !== prevMonth;
+  return showLabel ? MONTH_ABBR[firstDay.getUTCMonth()] : '';
+});
+
+function titleFor(cell: Cell) {
+  if (cell.future || cell.items.length === 0) return undefined;
+  const dateLabel = cell.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  const types = [...new Set(cell.items.map((i) => i.workoutType).filter(Boolean))].join(', ');
+  const summary = `${cell.minutes} min${types ? ` · ${types}` : ''}`;
+  return `${dateLabel} — ${summary}`;
+}
+---
+
+<div class="not-prose" data-training-heatmap>
+  <div class="overflow-x-auto pb-1">
+    <div class="inline-flex flex-col gap-1" style={`min-width: ${WEEKS * 14}px`}>
+      <div class="flex text-[10px] text-muted-foreground" style="height: 12px">
+        {monthLabels.map((label) => (
+          <span style="width: 14px" class="shrink-0">{label}</span>
+        ))}
+      </div>
+      <div class="flex gap-[3px]">
+        {weeks.map((week) => (
+          <div class="flex flex-col gap-[3px]">
+            {week.map((cell) => (
+              <div
+                class="h-[11px] w-[11px] rounded-[2px]"
+                style={
+                  cell.future
+                    ? 'background-color: transparent'
+                    : cell.level === 0
+                      ? 'background-color: var(--border)'
+                      : `background-color: color-mix(in oklab, var(--chart-1) ${cell.level * 22 + 12}%, var(--card))`
+                }
+                title={titleFor(cell)}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+  <div class="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+    <span>Less</span>
+    {[0, 1, 2, 3, 4].map((level) => (
+      <span
+        class="h-[10px] w-[10px] rounded-[2px]"
+        style={
+          level === 0
+            ? 'background-color: var(--border)'
+            : `background-color: color-mix(in oklab, var(--chart-1) ${level * 22 + 12}%, var(--card))`
+        }
+      />
+    ))}
+    <span>More</span>
+  </div>
+</div>

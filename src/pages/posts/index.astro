@@ -1,0 +1,24 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '@/layouts/Layout.astro';
+import EntryCard from '@/components/EntryCard.astro';
+
+const posts = (await getCollection('posts', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<Layout title="Blog — sj-blog" description="Writing on whatever I'm thinking about.">
+  <h1 class="text-2xl font-bold tracking-tight">Blog</h1>
+  <div class="mt-6 grid gap-4">
+    {posts.map((post) => (
+      <EntryCard
+        href={`/posts/${post.id}`}
+        title={post.data.title}
+        description={post.data.description}
+        pubDate={post.data.pubDate}
+        tags={post.data.tags}
+      />
+    ))}
+  </div>
+</Layout>

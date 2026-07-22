@@ -1,0 +1,35 @@
+---
+import { getCollection, render } from 'astro:content';
+import ClothingLayout from '@/layouts/ClothingLayout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('clothing', ({ data }) => import.meta.env.DEV || !data.draft);
+  return entries.map((entry) => ({
+    params: { id: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<ClothingLayout
+  title={entry.data.title}
+  description={entry.data.description}
+  category={entry.data.category}
+  brand={entry.data.brand}
+  madeIn={entry.data.madeIn}
+  measurements={entry.data.measurements}
+  purchasedDate={entry.data.purchasedDate}
+  purchasePlace={entry.data.purchasePlace}
+  price={entry.data.price}
+  frontImage={entry.data.frontImage}
+  backImage={entry.data.backImage}
+  hotspots={entry.data.hotspots}
+  story={entry.data.story}
+  storyQuote={entry.data.storyQuote}
+  care={entry.data.care}
+>
+  <Content />
+</ClothingLayout>
