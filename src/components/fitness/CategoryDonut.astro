@@ -1,0 +1,139 @@
+---
+import type { FitnessStats } from '@/lib/fitness-stats';
+
+interface Props {
+  categoryBreakdown: FitnessStats['categoryBreakdown'];
+}
+
+const { categoryBreakdown } = Astro.props;
+const runMin = categoryBreakdown.running.minutes;
+const workMin = categoryBreakdown.workout.minutes;
+const total = runMin + workMin;
+
+const R = 48;
+const C = 2 * Math.PI * R;
+
+const runFrac = total > 0 ? runMin / total : 0;
+const workFrac = total > 0 ? workMin / total : 0;
+
+const runLen = C * runFrac;
+const workLen = C * workFrac;
+
+// Workout arc begins where the running arc ends.
+const runRotation = -90;
+const workRotation = -90 + 360 * runFrac;
+
+const runPct = Math.round(runFrac * 100);
+
+function formatMinutes(minutes: number) {
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const hours = minutes / 60;
+  return `${hours.toFixed(hours < 10 ? 1 : 0)} h`;
+}
+
+const legend = [
+  { label: 'Running', text: formatMinutes(runMin), color: 'var(--chart-1)' },
+  { label: 'Workout', text: formatMinutes(workMin), color: 'var(--chart-4)' },
+];
+---
+
+<div class="not-prose rounded-lg border border-border bg-card p-4" data-category-donut>
+  <h3 class="text-sm font-semibold text-foreground">Time split</h3>
+  <div class="mt-4 flex items-center gap-5">
+    <div class="relative size-28 shrink-0">
+      <svg viewBox="0 0 120 120" class="size-full -rotate-0" role="img" aria-label={`Running ${runPct}% of active time`}>
+        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--border)" stroke-width="12" />
+        {runLen > 0 && (
+          <circle
+            class="donut-arc"
+            cx="60"
+            cy="60"
+            r={R}
+            fill="none"
+            stroke="var(--chart-1)"
+            stroke-width="12"
+            stroke-linecap="round"
+            stroke-dasharray={`${runLen} ${C}`}
+            data-arc-len={runLen}
+            style={`transform-origin:center;transform:rotate(${runRotation}deg);stroke-dashoffset:${runLen}`}
+          />
+        )}
+        {workLen > 0 && (
+          <circle
+            class="donut-arc"
+            cx="60"
+            cy="60"
+            r={R}
+            fill="none"
+            stroke="var(--chart-4)"
+            stroke-width="12"
+            stroke-linecap="round"
+            stroke-dasharray={`${workLen} ${C}`}
+            data-arc-len={workLen}
+            style={`transform-origin:center;transform:rotate(${workRotation}deg);stroke-dashoffset:${workLen}`}
+          />
+        )}
+      </svg>
+      <div class="absolute inset-0 flex flex-col items-center justify-center">
+        <span class="font-mono text-lg font-semibold tabular-nums text-foreground">{runPct}%</span>
+        <span class="text-[10px] tracking-wide text-muted-foreground uppercase">running</span>
+      </div>
+    </div>
+    <ul class="flex-1 space-y-2 text-sm">
+      {legend.map((row) => (
+        <li class="flex items-center gap-2">
+          <span class="size-3 shrink-0 rounded-[3px]" style={`background-color:${row.color}`} />
+          <span class="flex-1 text-muted-foreground">{row.label}</span>
+          <span class="font-mono tabular-nums text-foreground">{row.text}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+
+<style>
+  .donut-arc {
+    transition: stroke-dashoffset 700ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .donut-arc {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function animateDonut(root: ParentNode) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const donuts = root.querySelectorAll<HTMLElement>('[data-category-donut]');
+    if (donuts.length === 0) return;
+
+    donuts.forEach((donut) => {
+      const arcs = donut.querySelectorAll<SVGElement>('.donut-arc');
+      if (arcs.length === 0) return;
+
+      const reveal = () => arcs.forEach((arc) => (arc.style.strokeDashoffset = '0'));
+
+      if (reduceMotion) {
+        reveal();
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              requestAnimationFrame(reveal);
+              observer.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.4 },
+      );
+      observer.observe(donut);
+    });
+  }
+
+  animateDonut(document);
+  document.addEventListener('astro:page-load', () => animateDonut(document));
+</script>

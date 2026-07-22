@@ -1,9 +1,12 @@
 ---
 import { getCollection, render } from 'astro:content';
 import EntryLayout from '@/layouts/EntryLayout.astro';
+import { excludeWalking } from '@/lib/fitness-stats';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft);
+  const entries = excludeWalking(
+    await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)
+  );
   return entries.map((entry) => ({
     params: { id: entry.id },
     props: { entry },

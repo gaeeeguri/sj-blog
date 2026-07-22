@@ -2,6 +2,8 @@
 import { getCollection } from 'astro:content';
 import Layout from '@/layouts/Layout.astro';
 import EntryCard from '@/components/EntryCard.astro';
+import FitnessTeaser from '@/components/fitness/FitnessTeaser.astro';
+import { computeFitnessStats, excludeWalking } from '@/lib/fitness-stats';
 
 const [posts, fitness, clothing] = await Promise.all([
   getCollection('posts', ({ data }) => import.meta.env.DEV || !data.draft),
@@ -9,13 +11,15 @@ const [posts, fitness, clothing] = await Promise.all([
   getCollection('clothing', ({ data }) => import.meta.env.DEV || !data.draft),
 ]);
 
-const latest = [
-  ...posts.map((e) => ({ kind: 'posts' as const, entry: e })),
-  ...fitness.map((e) => ({ kind: 'fitness' as const, entry: e })),
-  ...clothing.map((e) => ({ kind: 'clothing' as const, entry: e })),
-]
-  .sort((a, b) => b.entry.data.pubDate.valueOf() - a.entry.data.pubDate.valueOf())
+const latest = posts
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
   .slice(0, 6);
+
+const latestClothing = clothing
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+const fitnessStats = computeFitnessStats(excludeWalking(fitness));
 ---
 
 <Layout title="sj-blog">
@@ -27,16 +31,42 @@ const latest = [
   <section class="mt-10">
     <h2 class="text-lg font-semibold">Latest</h2>
     <div class="mt-4 grid gap-4">
-      {latest.map(({ kind, entry }) => (
+      {latest.map((entry) => (
         <EntryCard
-          href={`/${kind}/${entry.id}`}
+          href={`/posts/${entry.id}`}
           title={entry.data.title}
           description={entry.data.description}
           pubDate={entry.data.pubDate}
           tags={entry.data.tags}
-          meta={kind}
         />
       ))}
     </div>
   </section>
+
+  <section class="mt-10">
+    <h2 class="text-lg font-semibold">Fitness</h2>
+    <div class="mt-4">
+      <FitnessTeaser stats={fitnessStats} />
+    </div>
+  </section>
+
+  {latestClothing.length > 0 && (
+    <section class="mt-10">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Clothing</h2>
+        <a href="/clothing" class="text-sm text-muted-foreground transition-colors hover:text-foreground">All →</a>
+      </div>
+      <div class="mt-4 grid gap-4">
+        {latestClothing.map((entry) => (
+          <EntryCard
+            href={`/clothing/${entry.id}`}
+            title={entry.data.title}
+            description={entry.data.description}
+            pubDate={entry.data.pubDate}
+            tags={entry.data.tags}
+          />
+        ))}
+      </div>
+    </section>
+  )}
 </Layout>

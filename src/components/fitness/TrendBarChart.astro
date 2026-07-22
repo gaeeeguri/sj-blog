@@ -1,0 +1,106 @@
+---
+import type { WeeklyTrendPoint } from '@/lib/fitness-stats';
+
+interface Props {
+  weeklyTrend: WeeklyTrendPoint[];
+  metric?: 'distanceKm' | 'durationMinutes';
+}
+
+const { weeklyTrend, metric = 'distanceKm' } = Astro.props;
+
+const unit = metric === 'distanceKm' ? 'km' : 'min';
+const decimals = metric === 'distanceKm' ? 1 : 0;
+
+const values = weeklyTrend.map((w) => (metric === 'distanceKm' ? w.distanceKm : w.durationMinutes));
+const max = Math.max(1, ...values);
+
+const bars = weeklyTrend.map((w, i) => {
+  const value = values[i];
+  const ws = new Date(`${w.weekStartISO}T00:00:00Z`);
+  const label = ws.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return {
+    scale: value / max,
+    title: `Week of ${label} — ${value.toFixed(decimals)} ${unit}`,
+    label,
+  };
+});
+
+const total = values.reduce((a, b) => a + b, 0);
+---
+
+<div class="not-prose rounded-lg border border-border bg-card p-4" data-trend-chart>
+  <div class="flex items-baseline justify-between">
+    <h3 class="text-sm font-semibold text-foreground">Last 12 weeks</h3>
+    <span class="font-mono text-xs tabular-nums text-muted-foreground">{total.toFixed(decimals)} {unit}</span>
+  </div>
+  <div class="mt-4 flex h-32 items-end gap-[3px]">
+    {bars.map((bar) => (
+      <div
+        class="trend-bar flex-1 origin-bottom rounded-[2px]"
+        style={`--bar-scale:${bar.scale.toFixed(4)};min-height:2px;background-color:color-mix(in oklab, var(--chart-1) 78%, var(--card))`}
+        title={bar.title}
+      />
+    ))}
+  </div>
+  <div class="mt-2 flex justify-between text-[10px] text-muted-foreground">
+    <span>{bars[0]?.label}</span>
+    <span>{bars[bars.length - 1]?.label}</span>
+  </div>
+</div>
+
+<style>
+  .trend-bar {
+    height: 100%;
+    transform: scaleY(0);
+  }
+  .trend-bar[data-visible] {
+    transform: scaleY(var(--bar-scale));
+    transition: transform 500ms ease-out;
+    transition-delay: var(--bar-delay, 0ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .trend-bar {
+      transform: scaleY(var(--bar-scale));
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function animateTrend(root: ParentNode) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const charts = root.querySelectorAll<HTMLElement>('[data-trend-chart]');
+    if (charts.length === 0) return;
+
+    charts.forEach((chart) => {
+      const bars = chart.querySelectorAll<HTMLElement>('.trend-bar');
+      if (reduceMotion) {
+        bars.forEach((bar) => bar.setAttribute('data-visible', ''));
+        return;
+      }
+
+      const reveal = () => {
+        bars.forEach((bar, i) => {
+          bar.style.setProperty('--bar-delay', `${i * 30}ms`);
+          requestAnimationFrame(() => bar.setAttribute('data-visible', ''));
+        });
+      };
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              reveal();
+              observer.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.4 },
+      );
+      observer.observe(chart);
+    });
+  }
+
+  animateTrend(document);
+  document.addEventListener('astro:page-load', () => animateTrend(document));
+</script>

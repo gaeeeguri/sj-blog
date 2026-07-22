@@ -1,0 +1,107 @@
+---
+import type { FitnessStats } from '@/lib/fitness-stats';
+
+interface Props {
+  stats: FitnessStats;
+}
+
+const { stats } = Astro.props;
+
+function formatPace(minPerKm: number) {
+  const totalSeconds = Math.round(minPerKm * 60);
+  const mm = Math.floor(totalSeconds / 60);
+  const ss = String(totalSeconds % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+type Tile = {
+  label: string;
+  text: string;
+  countup?: { target: number; decimals: number; suffix?: string };
+};
+
+const tiles: Tile[] = [
+  {
+    label: 'total workouts',
+    text: `${stats.totalWorkouts}`,
+    countup: { target: stats.totalWorkouts, decimals: 0 },
+  },
+  {
+    label: 'total distance',
+    text: `${stats.totalDistanceKm.toFixed(1)} km`,
+    countup: { target: stats.totalDistanceKm, decimals: 1, suffix: ' km' },
+  },
+  {
+    label: 'current streak',
+    text: `${stats.currentStreakDays} d`,
+    countup: { target: stats.currentStreakDays, decimals: 0, suffix: ' d' },
+  },
+  {
+    label: 'avg pace / km',
+    text: stats.avgPaceMinPerKm !== undefined ? formatPace(stats.avgPaceMinPerKm) : '—',
+  },
+];
+---
+
+<div class="not-prose grid grid-cols-2 gap-3 sm:grid-cols-4">
+  {tiles.map((tile) => (
+    <div class="rounded-lg border border-border bg-card px-4 py-3">
+      <p
+        class="font-mono text-xl font-semibold tabular-nums text-foreground"
+        data-countup-target={tile.countup?.target}
+        data-countup-decimals={tile.countup?.decimals}
+        data-countup-suffix={tile.countup?.suffix}
+      >
+        {tile.text}
+      </p>
+      <p class="mt-1 text-[11px] tracking-wide text-muted-foreground uppercase">{tile.label}</p>
+    </div>
+  ))}
+</div>
+
+<script>
+  function animateCountups(root: ParentNode) {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const nodes = root.querySelectorAll<HTMLElement>('[data-countup-target]');
+    if (nodes.length === 0) return;
+
+    if (reduceMotion) return;
+
+    const DURATION = 700;
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const run = (el: HTMLElement) => {
+      const target = Number(el.dataset.countupTarget);
+      const decimals = Number(el.dataset.countupDecimals ?? '0');
+      const suffix = el.dataset.countupSuffix ?? '';
+      if (Number.isNaN(target)) return;
+
+      const start = performance.now();
+      const step = (now: number) => {
+        const progress = Math.min(1, (now - start) / DURATION);
+        const value = target * easeOut(progress);
+        el.textContent = `${value.toFixed(decimals)}${suffix}`;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = `${target.toFixed(decimals)}${suffix}`;
+      };
+      requestAnimationFrame(step);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            run(entry.target as HTMLElement);
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.4 },
+    );
+
+    nodes.forEach((node) => observer.observe(node));
+  }
+
+  animateCountups(document);
+  document.addEventListener('astro:page-load', () => animateCountups(document));
+</script>

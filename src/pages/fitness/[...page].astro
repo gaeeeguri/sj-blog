@@ -2,46 +2,81 @@
 import type { GetStaticPathsOptions } from 'astro';
 import { getCollection } from 'astro:content';
 import Layout from '@/layouts/Layout.astro';
-import EntryCard from '@/components/EntryCard.astro';
+import FitnessCard from '@/components/fitness/FitnessCard.astro';
+import StatsOverview from '@/components/fitness/StatsOverview.astro';
+import TrendBarChart from '@/components/fitness/TrendBarChart.astro';
+import CategoryDonut from '@/components/fitness/CategoryDonut.astro';
 import TrainingHeatmap from '@/components/fitness/TrainingHeatmap.astro';
+import { computeFitnessStats, excludeWalking } from '@/lib/fitness-stats';
 import { buttonVariants } from '@/components/ui/button';
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
-  const entries = (await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
-    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
-  );
+  const entries = excludeWalking(
+    await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)
+  ).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
   return paginate(entries, { pageSize: 24 });
 }
 
 const { page } = Astro.props;
 
-const allEntries = (await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)).sort(
-  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
-);
+const allEntries = excludeWalking(
+  await getCollection('fitness', ({ data }) => import.meta.env.DEV || !data.draft)
+).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const stats = computeFitnessStats(allEntries);
+
+const filters = [
+  { key: 'all', label: 'All' },
+  { key: 'running', label: 'Running' },
+  { key: 'workout', label: 'Workout' },
+];
 ---
 
-<Layout title="Fitness — sj-blog" description="Training log and workout notes.">
+<Layout title="Fitness — sj-blog" description="Training log and workout statistics.">
   <h1 class="text-2xl font-bold tracking-tight">Fitness</h1>
+  <p class="mt-2 text-muted-foreground">Auto-synced training log with running and workout stats.</p>
+
   <div class="mt-6">
-    <TrainingHeatmap entries={allEntries} />
+    <StatsOverview stats={stats} />
   </div>
-  <div class="mt-8 grid gap-4">
-    {page.data.map((entry) => {
-      const meta = [entry.data.workoutType, entry.data.durationMinutes ? `${entry.data.durationMinutes} min` : null]
-        .filter(Boolean)
-        .join(' · ');
-      return (
-        <EntryCard
-          href={`/fitness/${entry.id}`}
-          title={entry.data.title}
-          description={entry.data.description}
-          pubDate={entry.data.pubDate}
-          tags={entry.data.tags}
-          meta={meta || undefined}
-        />
-      );
-    })}
+
+  <section class="mt-8">
+    <h2 class="text-sm font-semibold text-muted-foreground">Activity</h2>
+    <div class="mt-3">
+      <TrainingHeatmap entries={allEntries} />
+    </div>
+  </section>
+
+  <div class="mt-8 grid gap-4 sm:grid-cols-2">
+    <CategoryDonut categoryBreakdown={stats.categoryBreakdown} />
+    <TrendBarChart weeklyTrend={stats.weeklyTrend} metric="distanceKm" />
   </div>
+
+  <section class="mt-10" data-fitness-list>
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-muted-foreground">Log</h2>
+      <div class="flex gap-1.5" role="group" aria-label="Filter activities">
+        {filters.map((f, i) => (
+          <button
+            type="button"
+            data-filter={f.key}
+            aria-pressed={i === 0 ? 'true' : 'false'}
+            class={buttonVariants({ variant: i === 0 ? 'secondary' : 'ghost', size: 'sm' })}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="mt-3 divide-y divide-border rounded-lg border border-border" data-list-rows>
+      {page.data.map((entry) => (
+        <FitnessCard entry={entry} />
+      ))}
+    </div>
+    <p class="mt-3 hidden text-sm text-muted-foreground" data-empty-msg>No activities in this category on this page.</p>
+  </section>
+
   <nav class="mt-8 flex items-center justify-between text-sm">
     <a
       href={page.url.prev ?? '#'}
@@ -60,3 +95,43 @@ const allEntries = (await getCollection('fitness', ({ data }) => import.meta.env
     </a>
   </nav>
 </Layout>
+
+<script>
+  function initFilters(root: ParentNode) {
+    const section = root.querySelector<HTMLElement>('[data-fitness-list]');
+    if (!section) return;
+
+    const buttons = section.querySelectorAll<HTMLButtonElement>('[data-filter]');
+    const rows = section.querySelectorAll<HTMLElement>('[data-list-rows] [data-category]');
+    const emptyMsg = section.querySelector<HTMLElement>('[data-empty-msg]');
+    if (buttons.length === 0) return;
+
+    const secondary =
+      'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)]';
+    const ghost = 'hover:bg-muted hover:text-foreground dark:hover:bg-muted/50';
+    const secondaryCls = secondary.split(' ');
+    const ghostCls = ghost.split(' ');
+
+    const apply = (key: string) => {
+      let visible = 0;
+      rows.forEach((row) => {
+        const match = key === 'all' || row.dataset.category === key;
+        row.classList.toggle('hidden', !match);
+        if (match) visible += 1;
+      });
+      emptyMsg?.classList.toggle('hidden', visible !== 0);
+
+      buttons.forEach((btn) => {
+        const active = btn.dataset.filter === key;
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        btn.classList.remove(...secondaryCls, ...ghostCls);
+        btn.classList.add(...(active ? secondaryCls : ghostCls));
+      });
+    };
+
+    buttons.forEach((btn) => btn.addEventListener('click', () => apply(btn.dataset.filter ?? 'all')));
+  }
+
+  initFilters(document);
+  document.addEventListener('astro:page-load', () => initFilters(document));
+</script>

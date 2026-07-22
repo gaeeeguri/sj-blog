@@ -1,0 +1,64 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { Footprints, Bike, Waves, Dumbbell, Mountain, Activity } from 'lucide-react';
+import { categoryOf } from '@/lib/fitness-stats';
+
+interface Props {
+  entry: CollectionEntry<'fitness'>;
+}
+
+const { entry } = Astro.props;
+const { title, pubDate, distanceKm, durationMinutes, paceMinPerKm, avgHeartRate, workoutType } = entry.data;
+const category = categoryOf(entry);
+
+function formatPace(minPerKm: number) {
+  const totalSeconds = Math.round(minPerKm * 60);
+  const mm = Math.floor(totalSeconds / 60);
+  const ss = String(totalSeconds % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+// Icon derives from title/workoutType (display only) — category logic stays on distanceKm.
+function pickIcon() {
+  const t = title.toLowerCase();
+  if (t.includes('swim') || workoutType === 'mobility') return Waves;
+  if (t.includes('cycl') || t.includes('bike') || t.includes('cycling')) return Bike;
+  if (t.includes('hik') || t.includes('mountain')) return Mountain;
+  if (t.includes('weight') || t.includes('strength') || workoutType === 'strength') return Dumbbell;
+  if (t.includes('walk') || t.includes('run') || t.includes('treadmill')) return Footprints;
+  return Activity;
+}
+const Icon = pickIcon();
+
+const dateLabel = pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+// Primary + secondary stat depending on category.
+const primary =
+  category === 'running' && distanceKm !== undefined ? `${distanceKm.toFixed(1)} km` : durationMinutes !== undefined ? `${durationMinutes} min` : '—';
+const secondary =
+  category === 'running'
+    ? paceMinPerKm !== undefined
+      ? `${formatPace(paceMinPerKm)} /km`
+      : undefined
+    : avgHeartRate !== undefined
+      ? `${avgHeartRate} bpm`
+      : undefined;
+---
+
+<a
+  href={`/fitness/${entry.id}`}
+  data-category={category}
+  class="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-accent/50"
+>
+  <span class="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground group-hover:text-foreground">
+    <Icon className="size-4" />
+  </span>
+  <span class="min-w-0 flex-1">
+    <span class="block truncate text-sm font-medium text-foreground">{title}</span>
+    <time datetime={pubDate.toISOString()} class="block text-xs text-muted-foreground">{dateLabel}</time>
+  </span>
+  <span class="shrink-0 text-right">
+    <span class="block font-mono text-sm font-semibold tabular-nums text-foreground">{primary}</span>
+    {secondary && <span class="block font-mono text-xs tabular-nums text-muted-foreground">{secondary}</span>}
+  </span>
+</a>
